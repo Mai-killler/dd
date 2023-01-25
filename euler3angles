@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+
+import asyncio
+import mavsdk
+from mavsdk import System
+import numpy as np
+import matplotlib.pyplot as plt
+from time import localtime
+from matplotlib import dates
+from IPython import display
+import sys
+import time
+from itertools import count
+import pandas as pd
+from matplotlib.animation import FuncAnimation
+
+async def run():
+    # Init the drone
+    drone = System()
+    print("Conecting...")
+    await drone.connect(system_address="serial:///dev/ttyACM0")
+    async for state in drone.core.connection_state():
+        if state.is_connected:
+            print(f"-- Connected to drone!")
+            break
+    # Start the tasks
+    asyncio.ensure_future(print_euler(drone))
+    asyncio.ensure_future(set_rate_updates(drone, rate_hz))
+
+def frollangle(a):
+    meuler=str(a).split(',')
+    froll = float(meuler[0].replace('EulerAngle: [roll_deg: ', ''))
+    return froll
+
+def fpitchangle(b):
+    meuler=str(b).split(',')
+    fpitch = float(meuler[1].replace('pitch_deg: ', ''))
+    return fpitch
+
+def fyawangle(c):
+    meuler=str(c).split(',')
+    fyaw = float(meuler[2].replace('yaw_deg: ', ''))
+    return fyaw
+
+def frollgraph(d, e):
+    global n
+    plt.cla()
+    plt.plot(d, e)
+    plt.xlim(-19+n,1+n)
+    plt.ylim(-90, 90)
+    plt.xlabel('sec')
+    plt.ylabel('roll_angle')
+    plt.legend('Roll')
+
+def fpitchgraph(f, g):
+    global n
+    plt.cla()
+    plt.plot(f, g)
+    plt.xlim(-19+n,1+n)
+    plt.ylim(-90, 90)
+    plt.xlabel('sec')
+    plt.ylabel('pitch_angle')
+    plt.legend('Pitch')
+
+def fyawgraph(h, i):
+    global n
+    plt.cla()
+    plt.plot(h, i)
+    plt.xlim(-19+n,1+n)
+    plt.ylim(-180, 180)
+    plt.xlabel('sec')
+    plt.ylabel('yaw_angle')
+    plt.legend('yaw')
+
+'''def timecount(t):
+    global sec
+    time.sleep(1)
+    sec+=1.0
+    return sec
+'''
+def create_rollgen():   
+    while True:
+        global sec
+        global n
+        r=(yield)
+        p=(yield)
+        y=(yield)
+        n+=1
+        sec+=1
+        #second=timecount(sec)
+        times.append(sec)
+        roll_deg.append(r)
+        pitch_deg.append(p)
+        yaw_deg.append(y)
+        print(roll_deg)
+
+        if len(times) > 20:
+            del times[0]
+
+        if len(roll_deg) > 20:
+            #roll_deg[20+n:]
+            del roll_deg[0]
+
+        if len(pitch_deg) > 20:
+            del pitch_deg[0]
+
+        if len(yaw_deg) > 20:
+            del yaw_deg[0]
+                
+        '''plt.subplot(3,1,1)
+        frollgraph(times, roll_deg)
+        
+        plt.subplot(3,1,2)
+        fpitchgraph(times, pitch_deg)
+        
+        plt.subplot(3,1,3)
+        fyawgraph(times, yaw_deg)
+        
+        plt.pause(0.0000001)
+    plt.show()
+'''
+
+'''async def rate(drone):
+    async for attitude in drone.telemetry.set_rate_attitude():
+        await asyncio.sleep(1)
+        rate_hz=1
+        co1 = print_euler(attitude)
+        co1.send(rate_hz)
+        next(co1)
+'''
+
+async def set_rate_updates(drone, rate_hz):
+    await drone.set_rate_attitude(10.0)
+
+
+async def print_euler(drone):
+    global n
+    global roll_deg
+    global pitch_deg
+    global yaw_deg
+    global times
+    global sec
+    n=-1
+    roll_deg = []
+    pitch_deg = []
+    yaw_deg = []
+    times = []
+    sec = -1
+    
+    async for euler in drone.telemetry.attitude_euler(): 
+        test = frollangle(euler)
+        test1 = fpitchangle(euler)
+        test2 = fyawangle(euler)
+        co = create_rollgen()
+        next(co)
+        co.send(test)
+        co.send(test1)
+        co.send(test2)
+
+
+    
+if __name__ == "__main__":
+    # Start the main function
+    asyncio.ensure_future(run())
+
+
+    # Runs the event loop until the program is canceled with e.g. CTRL-C
+
+    asyncio.get_event_loop().run_forever()
