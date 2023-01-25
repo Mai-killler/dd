@@ -25,7 +25,7 @@ async def run():
             break
     # Start the tasks
     asyncio.ensure_future(print_euler(drone))
-    asyncio.ensure_future(set_rate_updates(drone, 0.1))
+    #asyncio.ensure_future(set_rate_updates(drone, 0.1))
 
 def frollangle(a):
     meuler=str(a).split(',')
@@ -92,7 +92,7 @@ def create_rollgen():
         roll_deg.append(r)
         pitch_deg.append(p)
         yaw_deg.append(y)
-        #print(roll_deg)
+        print(r)
 
         if len(times) > 20:
             del times[0]
@@ -107,7 +107,7 @@ def create_rollgen():
         if len(yaw_deg) > 20:
             del yaw_deg[0]
                 
-        '''plt.subplot(3,1,1)
+        plt.subplot(3,1,1)
         frollgraph(times, roll_deg)
         
         plt.subplot(3,1,2)
@@ -118,7 +118,7 @@ def create_rollgen():
         
         plt.pause(0.0000001)
     plt.show()
-'''
+
 
 '''async def rate(drone):
     async for attitude in drone.telemetry.set_rate_attitude():
@@ -130,14 +130,14 @@ def create_rollgen():
 '''
 
 async def set_rate_updates(drone, rate_hz):
-    try:
-        await drone.set_rate_attitude(rate_hz)
+    '''try:
+        await drone.telemetry.set_rate_attitude(rate_hz)
+        print('finish')
     except TelemetryError as e:
         print(e)
-    '''result = await
-    await drone.telemetry.set_rate_attitude(rate_hz)
-    print(result.Value)
     '''
+    await drone.telemetry.set_rate_attitude(rate_hz)
+
 
 
 async def print_euler(drone):
@@ -153,8 +153,9 @@ async def print_euler(drone):
     yaw_deg = []
     times = []
     sec = -1
-    
+    asyncio.ensure_future(set_rate_updates(drone, 0.0000001))
     async for euler in drone.telemetry.attitude_euler(): 
+        
         test = frollangle(euler)
         test1 = fpitchangle(euler)
         test2 = fyawangle(euler)
