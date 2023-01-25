@@ -131,8 +131,7 @@ def create_rollgen():
 
 async def set_rate_updates(drone, rate_hz):
     try:
-        await
-        drone.set_rate_attitude(rate_hz)
+        await drone.set_rate_attitude(rate_hz)
     except TelemetryError as e:
         print(e)
     '''result = await
