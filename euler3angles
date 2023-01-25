@@ -48,31 +48,16 @@ def frollgraph(d, e):
     global n
     plt.cla()
     plt.plot(d, e)
-    plt.xlim(-19+n,1+n)
-    plt.ylim(-90, 90)
-    plt.xlabel('sec')
-    plt.ylabel('roll_angle')
-    plt.legend('Roll')
 
 def fpitchgraph(f, g):
     global n
     plt.cla()
     plt.plot(f, g)
-    plt.xlim(-19+n,1+n)
-    plt.ylim(-90, 90)
-    plt.xlabel('sec')
-    plt.ylabel('pitch_angle')
-    plt.legend('Pitch')
 
 def fyawgraph(h, i):
     global n
     plt.cla()
     plt.plot(h, i)
-    plt.xlim(-19+n,1+n)
-    plt.ylim(-180, 180)
-    plt.xlabel('sec')
-    plt.ylabel('yaw_angle')
-    plt.legend('yaw')
 
 '''def timecount(t):
     global sec
@@ -110,12 +95,27 @@ def create_rollgen():
             del yaw_deg[0]
                
         plt.subplot(3,1,1)
+        plt.xlim(-19+n,1+n)
+        plt.ylim(-90, 90)
+        plt.xlabel('sec')
+        plt.ylabel('roll_angle')
+        plt.legend('Roll')
         frollgraph(times, roll_deg)
         
         plt.subplot(3,1,2)
+        plt.xlim(-19+n,1+n)
+        plt.ylim(-90, 90)
+        plt.xlabel('sec')
+        plt.ylabel('pitch_angle')
+        plt.legend('Pitch')
         fpitchgraph(times, pitch_deg)
         
         plt.subplot(3,1,3)
+        plt.xlim(-19+n,1+n)
+        plt.ylim(-180, 180)
+        plt.xlabel('sec')
+        plt.ylabel('yaw_angle')
+        plt.legend('yaw')
         fyawgraph(times, yaw_deg)
         
         plt.pause(0.0000001)
