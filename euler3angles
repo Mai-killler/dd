@@ -24,8 +24,10 @@ async def run():
             print(f"-- Connected to drone!")
             break
     # Start the tasks
+    t=asyncio.ensure_future(set_rate_updates(drone, 0.0001))
+    t.done()
     asyncio.ensure_future(print_euler(drone))
-    #asyncio.ensure_future(set_rate_updates(drone, 0.1))
+    
 
 def frollangle(a):
     meuler=str(a).split(',')
@@ -106,7 +108,7 @@ def create_rollgen():
 
         if len(yaw_deg) > 20:
             del yaw_deg[0]
-                
+'''               
         plt.subplot(3,1,1)
         frollgraph(times, roll_deg)
         
@@ -118,7 +120,7 @@ def create_rollgen():
         
         plt.pause(0.0000001)
     plt.show()
-
+'''
 
 '''async def rate(drone):
     async for attitude in drone.telemetry.set_rate_attitude():
@@ -153,9 +155,11 @@ async def print_euler(drone):
     yaw_deg = []
     times = []
     sec = -1
-    asyncio.ensure_future(set_rate_updates(drone, 0.0000001))
+    #t=asyncio.ensure_future(set_rate_updates(drone, 0.0001))
+    #t.done()
     async for euler in drone.telemetry.attitude_euler(): 
-        
+        #t=asyncio.ensure_future(set_rate_updates(drone, 0.0001))
+        #t.done()
         test = frollangle(euler)
         test1 = fpitchangle(euler)
         test2 = fyawangle(euler)
@@ -169,7 +173,9 @@ async def print_euler(drone):
     
 if __name__ == "__main__":
     # Start the main function
+
     asyncio.ensure_future(run())
+
 
 
     # Runs the event loop until the program is canceled with e.g. CTRL-C
