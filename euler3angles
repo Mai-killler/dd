@@ -129,8 +129,10 @@ def create_rollgen():
         next(co1)
 '''
 
-async def set_rate_updates(drone, 1.0):
-    await drone.set_rate_attitude(1.0)
+async def set_rate_updates(drone, rate_hz):
+    result =await
+    await drone.telemetry.set_rate_attitude(rate_hz)
+    print(result.Value)
 
 
 async def print_euler(drone):
