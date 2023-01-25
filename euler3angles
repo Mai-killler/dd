@@ -25,7 +25,7 @@ async def run():
             break
     # Start the tasks
     asyncio.ensure_future(print_euler(drone))
-    asyncio.ensure_future(set_rate_updates(drone, rate_hz))
+    asyncio.ensure_future(set_rate_updates(drone, 1.0))
 
 def frollangle(a):
     meuler=str(a).split(',')
@@ -129,8 +129,8 @@ def create_rollgen():
         next(co1)
 '''
 
-async def set_rate_updates(drone, rate_hz):
-    await drone.set_rate_attitude(10.0)
+async def set_rate_updates(drone, 1.0):
+    await drone.set_rate_attitude(1.0)
 
 
 async def print_euler(drone):
