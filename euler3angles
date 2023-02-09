@@ -7,27 +7,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 from time import localtime
 from matplotlib import dates
-from IPython import display
 import sys
 import time
 from itertools import count
-import pandas as pd
-from matplotlib.animation import FuncAnimation
+from datetime import datetime
 
 async def run():
     # Init the drone
     drone = System()
     print("Conecting...")
-    await drone.connect(system_address="serial:///dev/ttyACM0")
+    #await drone.connect(system_address="serial:///dev/ttyACM0")
+    await drone.connect(system_address="udp://:14540")
     async for state in drone.core.connection_state():
         if state.is_connected:
             print(f"-- Connected to drone!")
             break
     # Start the tasks
-    t=asyncio.ensure_future(set_rate_updates(drone, 0.0001))
-    t.done()
+    #t=asyncio.ensure_future(set_rate_updates(drone, 0.0001))
+    #t.done()
     asyncio.ensure_future(print_euler(drone))
-    
+    asyncio.ensure_future(print_position(drone))
+    asyncio.ensure_future(set_rate_updates(drone, 1.0))
+
 
 def frollangle(a):
     meuler=str(a).split(',')
@@ -44,34 +45,52 @@ def fyawangle(c):
     fyaw = float(meuler[2].replace('yaw_deg: ', ''))
     return fyaw
 
+def timestamp(d):
+    meuler=str(d).split(',')
+    ftimestamp = meuler[3]
+    fstamp= ftimestamp.replace('timestamp_us: ', '')
+    ftime=int(fstamp.replace(']', ''))
+    dt=datetime.fromtimestamp(ftime)
+    return dt
+
 def frollgraph(d, e):
     global n
     plt.cla()
     plt.plot(d, e)
+    plt.xlim(-19+n,1+n)
+    plt.ylim(-90, 90)
+    plt.xlabel('sec')
+    plt.ylabel('roll_angle')
+    plt.legend('Roll')
 
 def fpitchgraph(f, g):
     global n
     plt.cla()
     plt.plot(f, g)
+    plt.xlim(-19+n,1+n)
+    plt.ylim(-90, 90)
+    plt.xlabel('sec')
+    plt.ylabel('pitch_angle')
+    plt.legend('Pitch')
 
 def fyawgraph(h, i):
     global n
     plt.cla()
     plt.plot(h, i)
+    plt.xlim(-19+n,1+n)
+    plt.ylim(-180, 180)
+    plt.xlabel('sec')
+    plt.ylabel('yaw_angle')
+    plt.legend('yaw')
 
-'''def timecount(t):
-    global sec
-    time.sleep(1)
-    sec+=1.0
-    return sec
-'''
-def create_rollgen():   
+def create_rollgen():
     while True:
         global sec
         global n
         r=(yield)
         p=(yield)
         y=(yield)
+        ti=(yield)
         n+=1
         sec+=1
         #second=timecount(sec)
@@ -79,13 +98,15 @@ def create_rollgen():
         roll_deg.append(r)
         pitch_deg.append(p)
         yaw_deg.append(y)
-        print(r)
+        timestamp_us.append(ti)
 
         if len(times) > 20:
             del times[0]
 
+        if len(timestamp_us) >20:
+            del timestamp_us[0]
+
         if len(roll_deg) > 20:
-            #roll_deg[20+n:]
             del roll_deg[0]
 
         if len(pitch_deg) > 20:
@@ -93,46 +114,25 @@ def create_rollgen():
 
         if len(yaw_deg) > 20:
             del yaw_deg[0]
-               
-        plt.subplot(3,1,1)
-        plt.xlim(-19+n,1+n)
-        plt.ylim(-90, 90)
-        plt.xlabel('sec')
-        plt.ylabel('roll_angle')
-        plt.legend('Roll')
+        #print(r, p, y)
+        #print(ti)
+'''
+        plt.subplot(5,1,1)
         frollgraph(times, roll_deg)
-        
-        plt.subplot(3,1,2)
-        plt.xlim(-19+n,1+n)
-        plt.ylim(-90, 90)
-        plt.xlabel('sec')
-        plt.ylabel('pitch_angle')
-        plt.legend('Pitch')
+
+        plt.subplot(5,1,2)
         fpitchgraph(times, pitch_deg)
-        
-        plt.subplot(3,1,3)
-        plt.xlim(-19+n,1+n)
-        plt.ylim(-180, 180)
-        plt.xlabel('sec')
-        plt.ylabel('yaw_angle')
-        plt.legend('yaw')
+
+        plt.subplot(5,1,3)
         fyawgraph(times, yaw_deg)
-        
+
         plt.pause(0.0000001)
     plt.show()
-
-
-'''async def rate(drone):
-    async for attitude in drone.telemetry.set_rate_attitude():
-        await asyncio.sleep(1)
-        rate_hz=1
-        co1 = print_euler(attitude)
-        co1.send(rate_hz)
-        next(co1)
 '''
-
+#Update rate
 async def set_rate_updates(drone, rate_hz):
-    '''try:
+    '''
+    try:
         await drone.telemetry.set_rate_attitude(rate_hz)
         print('finish')
     except TelemetryError as e:
@@ -140,14 +140,13 @@ async def set_rate_updates(drone, rate_hz):
     '''
     await drone.telemetry.set_rate_attitude(rate_hz)
 
-
-
 async def print_euler(drone):
     global n
     global roll_deg
     global pitch_deg
     global yaw_deg
     global times
+    global timestamp_us
     global sec
     n=-1
     roll_deg = []
@@ -155,22 +154,130 @@ async def print_euler(drone):
     yaw_deg = []
     times = []
     sec = -1
-    #t=asyncio.ensure_future(set_rate_updates(drone, 0.0001))
+    timestamp_us = []
+    #t=asyncio.ensure_future(set_rate_updates(drone, 1.0))
     #t.done()
-    async for euler in drone.telemetry.attitude_euler(): 
+    #asyncio.ensure_future(set_rate_updates(drone, 1.0))
+    async for euler in drone.telemetry.attitude_euler():
         #t=asyncio.ensure_future(set_rate_updates(drone, 0.0001))
         #t.done()
+        #asyncio.ensure_future(set_rate_updates(drone, 1.0))
         test = frollangle(euler)
         test1 = fpitchangle(euler)
         test2 = fyawangle(euler)
+        test3 = timestamp(euler)
         co = create_rollgen()
         next(co)
         co.send(test)
         co.send(test1)
         co.send(test2)
+        co.send(test3)
+
+def latitude(d):
+    mposition=str(d).split(',')
+    flatitude = float(mposition[0].replace('Position: [latitude_deg: ', ''))
+    return flatitude
+
+def longitude(e):
+    mposition=str(e).split(',')
+    flongitude = float(mposition[1].replace('longitude_deg: ', ''))
+    return flongitude
+
+def ab_altitude(f):
+    mposition=str(f).split(',')
+    fab_altitude = float(mposition[2].replace('absolute_altitude_m: ', ''))
+    return fab_altitude
+
+def re_altitude(f):
+    mposition=str(f).split(',')
+    fre = mposition[3].replace('relative_altitude_m: ', '')
+    fre_altitude = float(fre.replace(']',''))
+    return fre_altitude
+
+def lalo_graph(j, k, l, m):
+    global n
+    plt.cla()
+    plt.plot(j, k, 'r', label = 'latitude_deg')
+    plt.plot(l, m, 'b', label = 'longitude_deg')
+    plt.xlim(-19+n,1+n)
+    plt.ylim(-180, 180)
+    plt.xlabel('sec')
+    plt.ylabel('Lat, Lon')
+    plt.legend('Position')
+
+def alti_graph(j, k, l, m):
+    global n
+    plt.cla()
+    plt.plot(j, k, 'r', label = 'ab_altitude')
+    plt.plot(l, m, 'b', label = 're_altitude')
+    plt.xlim(-19+n,1+n)
+    plt.ylim(0, 100)
+    plt.xlabel('sec')
+    plt.ylabel('altitude')
+    plt.legend('Altitude')
+
+def create_positiongen():
+    while True:
+        global sec
+        global n
+        global times
+        la=(yield)
+        lo=(yield)
+        ab=(yield)
+        re=(yield)
+        latitude_deg.append(la)
+        longitude_deg.append(lo)
+        absolute_altitude.append(ab)
+        relative_altitude.append(re)
 
 
-    
+        if len(latitude_deg) > 20:
+            del latitude_deg[0]
+
+        if len(longitude_deg) > 20:
+            del longitude_deg[0]
+
+        if len(absolute_altitude) > 20:
+            del yaw_deg[0]
+
+        if len(relative_altitude) > 20:
+            del relative_altitude[0]
+
+        print(la, lo, ab, re)
+'''
+        plt.subplot(5,1,4)
+        lalo_graph(times, latitude_deg, times, longitude_deg)
+        plt.subplot(5,1,5)
+        alti_graph(times, absolute_altitude, times, relative_altitude)
+
+        plt.pause(0.0000001)
+    plt.show()
+'''
+
+async def print_position(drone):
+    global latitude_deg
+    global longitude_deg
+    global absolute_altitude
+    global relative_altitude
+    latitude_deg = []
+    longitude_deg = []
+    absolute_altitude = []
+    relative_altitude = []
+    async for position in drone.telemetry.position():
+        pos1 = latitude(position)
+        pos2 = longitude(position)
+        pos3 = ab_altitude(position)
+        pos4 = re_altitude(position)
+        co1 = create_positiongen()
+        next(co1)
+        co1.send(pos1)
+        co1.send(pos2)
+        co1.send(pos3)
+        co1.send(pos4)
+
+
+
+
 if __name__ == "__main__":
     # Start the main function
 
